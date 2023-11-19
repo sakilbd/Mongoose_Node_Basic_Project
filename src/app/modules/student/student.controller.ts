@@ -25,13 +25,13 @@ const createStudent = async (req: Request, res: Response) => {
 
         const result = await StudentServices.createStudnetIntoDB(zodParsedData);
 
-        if (error) {
-            res.status(500).json({
-                success: false,
-                message: "Something went wrong",
-                error: error.details,
-            })
-        }
+        // if (error) {
+        //     res.status(500).json({
+        //         success: false,
+        //         message: "Something went wrong",
+        //         error: error.details,
+        //     })
+        // }
 
         //will call service func to send this data 
 
