@@ -1,13 +1,30 @@
 import { Request, Response, response } from "express";
 import { StudentServices } from "./student.service";
+import Joi from 'joi';
+import studentValidationSchema from "./student.validation";
 
 const createStudent = async (req: Request, res: Response) => {
     try {
+
+        //create schema validation using joi
+
+
+
         const { student: studentData } = req.body;
+
+        const { error, value } = studentValidationSchema.validate(studentData);
+        const result = await StudentServices.createStudnetIntoDB(studentData);
+
+        if (error) {
+            res.status(500).json({
+                success: false,
+                message: "Something went wrong",
+                error: error.details,
+            })
+        }
 
         //will call service func to send this data 
 
-        const result = await StudentServices.createStudnetIntoDB(studentData);
 
         //send response
         res.status(200).json({
@@ -17,7 +34,11 @@ const createStudent = async (req: Request, res: Response) => {
         })
     }
     catch (err) {
-        console.log(err);
+        res.status(500).json({
+            success: false,
+            message: "Something went wrong",
+            error: err,
+        })
     }
 }
 
