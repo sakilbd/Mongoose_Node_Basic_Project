@@ -91,7 +91,7 @@ const studentSchema = new Schema<TStudent, StudentModel>({ //for static methods
 
     id: { type: String, required: true, unique: true },
     password: {
-        type: String, required: true, unique: true, maxlength: [20, "Password cannot be more than 20 characters"]
+        type: String, required: true, maxlength: [20, "Password cannot be more than 20 characters"]
     },
 
     name: {
@@ -135,7 +135,22 @@ const studentSchema = new Schema<TStudent, StudentModel>({ //for static methods
         enum: ['active', 'blocked'],
         default: 'active',
     },
+    isDeleted: {
+        type: Boolean,
+        default: false,
+    },
+}, {
+    toJSON: {
+        virtuals: true,
+    }
 });
+//virtual 
+
+studentSchema.virtual("fullName").get(function () {
+    return `${this.name.firstName} ${this.name.middleName} ${this.name.lastName}`;
+})
+
+
 
 //pre save middleware/hook will work on create() save()
 
@@ -143,17 +158,33 @@ studentSchema.pre("save", async function (next) {
     // console.log(this, "pre hook :we will save the data")
     //hashing password and save into db 
     // eslint-disable-next-line @typescript-eslint/no-this-alias
-    const user = this;
+    const user = this;//refers to doc 
     user.password = await bycrypt.hash(user.password, Number(config.bcrypt_salt_rounds))
     next();
 })
 
 //post save middleware/hook 
-studentSchema.pre("save", function () {
-    console.log(this, "post hook :we saved our data")
+studentSchema.post("save", function (doc, next) {
+    // console.log(this, "post hook :we saved our data")
+    doc.password = "";
+    next();
 })
 
+//Query Middleware
+studentSchema.pre("find", function (next) {
+    this.find({ isDeleted: { $ne: true } });
+    next();
+})
+studentSchema.pre("findOne", function (next) {
+    this.find({ isDeleted: { $ne: true } });
+    next();
+})
 
+studentSchema.pre("aggregate", function (next) {
+    // this.find({ isDeleted: { $ne: true } });
+    this.pipeline().unshift({ $match: { isDeleted: { $ne: true } } })
+    next();
+})
 
 
 
