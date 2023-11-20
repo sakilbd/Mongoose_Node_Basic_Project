@@ -1,13 +1,18 @@
 import { Schema, model } from 'mongoose';
 import validator from 'validator';
 import {
-    Guardian,
-    LocalGuardian,
-    Student,
-    UserName,
+    TGuardian,
+    TLocalGuardian,
+    TStudent,
+    StudentMethods,
+    StudentModel,
+    TUserName,
 } from './student/student.interface';
 
-const userNameSchema = new Schema<UserName>({
+import bycrypt from 'bcrypt';
+import config from '../config';
+
+const userNameSchema = new Schema<TUserName>({
     firstName: {
         type: String,
         trim: true, //removes heading and trailing spaces.
@@ -35,7 +40,7 @@ const userNameSchema = new Schema<UserName>({
     },
 });
 
-const guardianSchema = new Schema<Guardian>({
+const guardianSchema = new Schema<TGuardian>({
     fatherName: {
         type: String,
         required: true,
@@ -62,7 +67,7 @@ const guardianSchema = new Schema<Guardian>({
     },
 });
 
-const localGuradianSchema = new Schema<LocalGuardian>({
+const localGuradianSchema = new Schema<TLocalGuardian>({
     name: {
         type: String,
         required: true,
@@ -81,8 +86,14 @@ const localGuradianSchema = new Schema<LocalGuardian>({
     },
 });
 
-const studentSchema = new Schema<Student>({
+// const studentSchema = new Schema<TStudent, StudentModel, StudentMethods>({ // for custom instance 
+const studentSchema = new Schema<TStudent, StudentModel>({ //for static methods 
+
     id: { type: String, required: true, unique: true },
+    password: {
+        type: String, required: true, unique: true, maxlength: [20, "Password cannot be more than 20 characters"]
+    },
+
     name: {
         type: userNameSchema,
         required: true,
@@ -126,4 +137,42 @@ const studentSchema = new Schema<Student>({
     },
 });
 
-export const StudentModel = model<Student>('Student', studentSchema);
+//pre save middleware/hook will work on create() save()
+
+studentSchema.pre("save", async function (next) {
+    // console.log(this, "pre hook :we will save the data")
+    //hashing password and save into db 
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const user = this;
+    user.password = await bycrypt.hash(user.password, Number(config.bcrypt_salt_rounds))
+    next();
+})
+
+//post save middleware/hook 
+studentSchema.pre("save", function () {
+    console.log(this, "post hook :we saved our data")
+})
+
+
+
+
+
+
+
+//creating a custom static method 
+
+studentSchema.statics.isUserExists = async function (id: string) {
+    const existingUser = await Student.findOne({ id })
+    return existingUser;
+}
+
+
+
+
+//creating a custom instance method 
+// studentSchema.methods.isUserExists = async function (id: string) {
+//     const existingUser = await Student.findOne({ id })
+//     return existingUser;
+// }
+
+export const Student = model<TStudent, StudentModel>('Student', studentSchema);
