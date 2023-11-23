@@ -18,7 +18,7 @@ app.use('/api/v1/students', StudentRouters);
 const getAController = (req: Request, res: Response) => {
   let a = 10;
 
-  res.send(a);
+  res.send("server is working");
 }
 app.get('/', getAController);
 
